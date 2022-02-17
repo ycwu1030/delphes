@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.12)
 
 project(Delphes)
 
@@ -11,7 +11,7 @@ IF(SET_RPATH)
   # Set up the RPATH so executables find the libraries even when installed in non-default location
   SET(CMAKE_MACOSX_RPATH 1)
   SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-  SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+  SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
   SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
   # Add the automatically determined parts of the RPATH which point to directories outside
@@ -24,7 +24,7 @@ IF(SET_RPATH)
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
   ENDIF(${isSystemDir} EQUAL -1)
 ENDIF(SET_RPATH)
-    
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 # Declare ROOT dependency
@@ -62,8 +62,8 @@ add_subdirectory(readers)
 add_subdirectory(cards)
 
 add_library(Delphes SHARED
-  $<TARGET_OBJECTS:classes> 
-  $<TARGET_OBJECTS:modules> 
+  $<TARGET_OBJECTS:classes>
+  $<TARGET_OBJECTS:modules>
   $<TARGET_OBJECTS:ExRootAnalysis>
   $<TARGET_OBJECTS:fastjet>
   $<TARGET_OBJECTS:tcl>

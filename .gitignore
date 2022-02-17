@@ -22,3 +22,5 @@ root2lhco
 root2pileup
 stdhep2pileup
 tmp
+build/
+.vscode/
