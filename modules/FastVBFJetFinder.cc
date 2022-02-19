@@ -77,9 +77,21 @@ using namespace fastjet::contrib;
 
 //------------------------------------------------------------------------------
 
+Double_t Checking_DeltaEta(const PseudoJet &j1, const PseudoJet &j2)
+{
+  return abs(j1.eta() - j2.eta());
+}
+
+Double_t Checking_InvariantMass(const PseudoJet &j1, const PseudoJet &j2)
+{
+  return (j1 + j2).m();
+}
+
+//------------------------------------------------------------------------------
+
 FastVBFJetFinder::FastVBFJetFinder() :
-  fPlugin(0), fRecomb(0), fAxesDef(0), fMeasureDef(0), fNjettinessPlugin(0), fValenciaPlugin(0),
-  fDefinition(0), fAreaDefinition(0), fItInputArray(0)
+  fPlugin(0), fRecomb(0),
+  fDefinition(0), fItInputArray(0)
 {
 }
 
@@ -112,8 +124,7 @@ void FastVBFJetFinder::Init()
 
   fJetPTMin = GetDouble("JetPTMin", 30.0);
   fJetEtaMin = GetDouble("JetEtaMin", 2.0);
-  // fJetPairDeltaEtaMin = GetDouble("JetPairDeltaEtaMin", 5.0);
-  // fJetPairInvariantMassMin = GetDouble("JetPairInvariantMassMin", 500)
+  fVBFMethod = GetInt("VBFMethod", 0);
 
   switch(fJetAlgorithm)
   {
@@ -145,6 +156,17 @@ void FastVBFJetFinder::Init()
     break;
   }
 
+  switch(fVBFMethod)
+  {
+  default:
+  case 0:
+    fMethod = Checking_DeltaEta;
+    break;
+  case 1:
+    fMethod = Checking_InvariantMass;
+    break;
+  }
+
   fPlugin = plugin;
   fRecomb = recomb;
 
@@ -158,7 +180,6 @@ void FastVBFJetFinder::Init()
   // create output arrays
 
   fOutputArray = ExportArray(GetString("OutputArray", "jets"));
-  fRhoOutputArray = ExportArray(GetString("RhoOutputArray", "rho"));
   fConstituentsOutputArray = ExportArray(GetString("ConstituentsOutputArray", "constituents"));
   fRestConstituentsOutputArray = ExportArray(GetString("RestConstituentsOutputArray", "rests"));
 }
@@ -167,22 +188,10 @@ void FastVBFJetFinder::Init()
 
 void FastVBFJetFinder::Finish()
 {
-  vector<TEstimatorStruct>::iterator itEstimators;
-
-  for(itEstimators = fEstimators.begin(); itEstimators != fEstimators.end(); ++itEstimators)
-  {
-    if(itEstimators->estimator) delete itEstimators->estimator;
-  }
-
   if(fItInputArray) delete fItInputArray;
   if(fDefinition) delete fDefinition;
-  if(fAreaDefinition) delete fAreaDefinition;
   if(fPlugin) delete static_cast<JetDefinition::Plugin *>(fPlugin);
   if(fRecomb) delete static_cast<JetDefinition::Recombiner *>(fRecomb);
-  if(fNjettinessPlugin) delete static_cast<JetDefinition::Plugin *>(fNjettinessPlugin);
-  if(fAxesDef) delete fAxesDef;
-  if(fMeasureDef) delete fMeasureDef;
-  if(fValenciaPlugin) delete static_cast<JetDefinition::Plugin *>(fValenciaPlugin);
 }
 
 //------------------------------------------------------------------------------
@@ -204,7 +213,6 @@ void FastVBFJetFinder::Process()
   vector<PseudoJet> inputList, outputList, subjets, tmpList;
   vector<PseudoJet>::iterator itInputList, itOutputList, itTmpList1, itTmpList2;
   unordered_set<Int_t> VBFConstituentID;
-  vector<TEstimatorStruct>::iterator itEstimators;
   Double_t excl_ymerge23 = 0.0;
   Double_t excl_ymerge34 = 0.0;
   Double_t excl_ymerge45 = 0.0;
@@ -249,7 +257,8 @@ void FastVBFJetFinder::Process()
   int forward_jet_size = tmpList.size();
   int forward_jet_id1 = -1;
   int forward_jet_id2 = -1;
-  detaMax = 0.0;
+  double checking_value_max = 0.0;
+  double checking_value;
   for(int id1 = 0; id1 < forward_jet_size; id1++)
   {
     for(int id2 = id1 + 1; id2 < forward_jet_size; id2++)
@@ -257,10 +266,10 @@ void FastVBFJetFinder::Process()
       double eta1 = tmpList[id1].eta();
       double eta2 = tmpList[id2].eta();
       if(eta1 * eta2 > 0) continue;
-      deta = abs(eta1 - eta2);
-      if(deta > detaMax)
+      checking_value = fMethod(tmpList[id1], tmpList[id2]);
+      if(checking_value > checking_value_max)
       {
-        detaMax = deta;
+        checking_value_max = checking_value;
         forward_jet_id1 = id1;
         forward_jet_id2 = id2;
       }
@@ -281,7 +290,6 @@ void FastVBFJetFinder::Process()
     momentum.SetPxPyPzE(jet.px(), jet.py(), jet.pz(), jet.E());
 
     area.reset(0.0, 0.0, 0.0, 0.0);
-    if(fAreaDefinition) area = itOutputList->area_4vector();
 
     candidate = factory->NewCandidate();
 

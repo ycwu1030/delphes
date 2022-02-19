@@ -39,6 +39,7 @@ namespace fastjet
 class JetDefinition;
 class AreaDefinition;
 class JetMedianBackgroundEstimator;
+class PseudoJet;
 namespace contrib
 {
 class NjettinessPlugin;
@@ -47,6 +48,8 @@ class AxesDefinition;
 class MeasureDefinition;
 } // namespace contrib
 } // namespace fastjet
+
+typedef Double_t (*TVBFMethod_ptr)(const fastjet::PseudoJet &, const fastjet::PseudoJet &);
 
 class FastVBFJetFinder : public DelphesModule
 {
@@ -62,21 +65,14 @@ private:
   void *fPlugin; //!
   void *fRecomb; //!
 
-  fastjet::contrib::AxesDefinition *fAxesDef;
-  fastjet::contrib::MeasureDefinition *fMeasureDef;
-
-  fastjet::contrib::NjettinessPlugin *fNjettinessPlugin; //!
-  fastjet::contrib::ValenciaPlugin *fValenciaPlugin; //!
   fastjet::JetDefinition *fDefinition; //!
 
   Int_t fJetAlgorithm;
   Double_t fParameterR;
-  Double_t fParameterP;
 
   Double_t fJetPTMin;
   Double_t fJetEtaMin;
-  // Double_t fJetPairDeltaEtaMin;
-  // Double_t fJetPairInvariantMassMin;
+  Int_t fVBFMethod;
 
   Double_t fConeRadius;
   Double_t fSeedThreshold;
@@ -87,75 +83,12 @@ private:
   Int_t fAdjacencyCut;
   Double_t fOverlapThreshold;
 
-  //-- Exclusive clustering for e+e- collisions --
-
-  Int_t fNJets;
-  Bool_t fExclusiveClustering;
-
-  //-- Valencia Linear Collider algorithm
-  Double_t fGamma;
-
-  //-- N (sub)jettiness parameters --
-
-  Bool_t fComputeNsubjettiness;
-  Double_t fBeta;
-  Int_t fAxisMode;
-  Double_t fRcutOff;
-  Int_t fN;
-
-  //-- Trimming parameters --
-
-  Bool_t fComputeTrimming;
-  Double_t fRTrim;
-  Double_t fPtFracTrim;
-
-  //-- Pruning parameters --
-
-  Bool_t fComputePruning;
-  Double_t fZcutPrun;
-  Double_t fRcutPrun;
-  Double_t fRPrun;
-
-  //-- SoftDrop parameters --
-
-  Bool_t fComputeSoftDrop;
-  Double_t fBetaSoftDrop;
-  Double_t fSymmetryCutSoftDrop;
-  Double_t fR0SoftDrop;
-
-  // --- FastJet Area method --------
-
-  fastjet::AreaDefinition *fAreaDefinition;
-  Int_t fAreaAlgorithm;
-  Bool_t fComputeRho;
-
-  // -- ghost based areas --
-  Double_t fGhostEtaMax;
-  Int_t fRepeat;
-  Double_t fGhostArea;
-  Double_t fGridScatter;
-  Double_t fPtScatter;
-  Double_t fMeanGhostPt;
-
-  // -- voronoi areas --
-  Double_t fEffectiveRfact;
-
-#if !defined(__CINT__) && !defined(__CLING__)
-  struct TEstimatorStruct
-  {
-    fastjet::JetMedianBackgroundEstimator *estimator;
-    Double_t etaMin, etaMax;
-  };
-
-  std::vector<TEstimatorStruct> fEstimators; //!
-#endif
-
+  TVBFMethod_ptr fMethod;
   TIterator *fItInputArray; //!
 
   const TObjArray *fInputArray; //!
 
   TObjArray *fOutputArray; //!
-  TObjArray *fRhoOutputArray; //!
   TObjArray *fConstituentsOutputArray; //!
   TObjArray *fRestConstituentsOutputArray; //!
 
