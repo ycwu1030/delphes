@@ -26,6 +26,7 @@
 
 #include "modules/FastJetFinder.h"
 #include "modules/FastJetGridMedianEstimator.h"
+#include "modules/FastJetMassDropTag.h"
 #include "modules/FastVBFJetFinder.h"
 #include "modules/RunPUPPI.h"
 
@@ -37,6 +38,7 @@
 
 #pragma link C++ class FastJetFinder + ;
 #pragma link C++ class FastVBFJetFinder + ;
+#pragma link C++ class FastJetMassDropTag + ;
 #pragma link C++ class FastJetGridMedianEstimator + ;
 #pragma link C++ class RunPUPPI + ;
 
