@@ -16,10 +16,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FastVBFJetFinder_h
-#define FastVBFJetFinder_h
+#ifndef FastJetVBFTag_h
+#define FastJetVBFTag_h
 
-/** \class FastVBFJetFinder
+/** \class FastJetVBFTag
  *
  *  Finds VBF jets using FastJet library.
  *
@@ -51,11 +51,11 @@ class MeasureDefinition;
 
 typedef Double_t (*TVBFMethod_ptr)(const fastjet::PseudoJet &, const fastjet::PseudoJet &);
 
-class FastVBFJetFinder : public DelphesModule
+class FastJetVBFTag : public DelphesModule
 {
 public:
-  FastVBFJetFinder();
-  ~FastVBFJetFinder();
+  FastJetVBFTag();
+  ~FastJetVBFTag();
 
   void Init();
   void Process();
@@ -92,7 +92,7 @@ private:
   TObjArray *fConstituentsOutputArray; //!
   TObjArray *fRestConstituentsOutputArray; //!
 
-  ClassDef(FastVBFJetFinder, 1)
+  ClassDef(FastJetVBFTag, 1)
 };
 
 #endif

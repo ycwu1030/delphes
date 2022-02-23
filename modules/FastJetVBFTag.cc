@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** \class FastVBFJetFinder
+/** \class FastJetVBFTag
  *
  *  Finds VBF jets using FastJet library.
  *
@@ -24,7 +24,7 @@
  *
  */
 
-#include "modules/FastVBFJetFinder.h"
+#include "modules/FastJetVBFTag.h"
 
 #include "classes/DelphesClasses.h"
 #include "classes/DelphesFactory.h"
@@ -89,7 +89,7 @@ Double_t Checking_InvariantMass(const PseudoJet &j1, const PseudoJet &j2)
 
 //------------------------------------------------------------------------------
 
-FastVBFJetFinder::FastVBFJetFinder() :
+FastJetVBFTag::FastJetVBFTag() :
   fPlugin(0), fRecomb(0),
   fDefinition(0), fItInputArray(0)
 {
@@ -97,13 +97,13 @@ FastVBFJetFinder::FastVBFJetFinder() :
 
 //------------------------------------------------------------------------------
 
-FastVBFJetFinder::~FastVBFJetFinder()
+FastJetVBFTag::~FastJetVBFTag()
 {
 }
 
 //------------------------------------------------------------------------------
 
-void FastVBFJetFinder::Init()
+void FastJetVBFTag::Init()
 {
   JetDefinition::Plugin *plugin = 0;
   JetDefinition::Recombiner *recomb = 0;
@@ -186,7 +186,7 @@ void FastVBFJetFinder::Init()
 
 //------------------------------------------------------------------------------
 
-void FastVBFJetFinder::Finish()
+void FastJetVBFTag::Finish()
 {
   if(fItInputArray) delete fItInputArray;
   if(fDefinition) delete fDefinition;
@@ -196,7 +196,7 @@ void FastVBFJetFinder::Finish()
 
 //------------------------------------------------------------------------------
 
-void FastVBFJetFinder::Process()
+void FastJetVBFTag::Process()
 {
   Candidate *candidate, *constituent;
   TLorentzVector momentum;
