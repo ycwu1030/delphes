@@ -122,6 +122,7 @@ void FastJetVBFTag::Init()
   fAdjacencyCut = GetInt("AdjacencyCut", 2);
   fOverlapThreshold = GetDouble("OverlapThreshold", 0.75);
 
+  // * Following arXiv: 2001.05178 for VBF topology
   fJetPTMin = GetDouble("JetPTMin", 30.0);
   fJetEtaMin = GetDouble("JetEtaMin", 2.0);
   fVBFMethod = GetInt("VBFMethod", 0);
