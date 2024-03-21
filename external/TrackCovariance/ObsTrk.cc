@@ -11,7 +11,7 @@
 //
 // Constructors
 //
-// x(3) track origin, p(3) track momentum at origin, Q charge, B ma gnetic field in Tesla
+// x(3) track origin, p(3) track momentum at origin, Q charge, B magnetic field in Tesla
 ObsTrk::ObsTrk(TVector3 x, TVector3 p, Double_t Q, SolGridCov *GC, SolGeom *G)
 {
 	fB = G->B();
@@ -21,6 +21,8 @@ ObsTrk::ObsTrk(TVector3 x, TVector3 p, Double_t Q, SolGridCov *GC, SolGeom *G)
 	fGenX = x;
 	fGenP = p;
 	fGenQ = Q;
+	fEflag = kFALSE;		// Electron flag 
+	fEscale = 1.;			// Electron scale
 	fGenPar.ResizeTo(5);
 	fGenParMm.ResizeTo(5);
 	fGenParACTS.ResizeTo(6);
@@ -33,21 +35,15 @@ ObsTrk::ObsTrk(TVector3 x, TVector3 p, Double_t Q, SolGridCov *GC, SolGeom *G)
 	fCovMm.ResizeTo(5, 5);
 	fCovACTS.ResizeTo(6, 6);
 	fCovILC.ResizeTo(5, 5);
-	fGenPar = XPtoPar(x,p,Q);
-	fGenParMm = ParToMm(fGenPar);
-	fGenParACTS = ParToACTS(fGenPar);
-	fGenParILC = ParToILC(fGenPar);
 	//
-	fObsPar = GenToObsPar(fGenPar);
-	fObsParMm = ParToMm(fObsPar);
-	fObsParACTS = ParToACTS(fObsPar);
-	fObsParILC = ParToILC(fObsPar);
-	fObsX = ParToX(fObsPar);
-	fObsP = ParToP(fObsPar);
-	fObsQ = ParToQ(fObsPar);
+	FillGen();
+	//
+	fCov = CovCalc(fGenPar);
 	fCovMm = CovToMm(fCov);
 	fCovACTS = CovToACTS(fObsPar, fCov);
 	fCovILC = CovToILC(fCov);
+	//
+	fObsDone = kFALSE;
 }
 //
 // x[3] track origin, p[3] track momentum at origin, Q charge, B magnetic field in Tesla
@@ -60,6 +56,8 @@ ObsTrk::ObsTrk(Double_t *x, Double_t *p, Double_t Q, SolGridCov* GC, SolGeom *G)
 	fGenX.SetXYZ(x[0],x[1],x[2]);
 	fGenP.SetXYZ(p[0],p[1],p[2]);
 	fGenQ = Q;
+	fEflag = kFALSE;		// Electron flag 
+	fEscale = 1.;			// Electron scale
 	fGenPar.ResizeTo(5);
 	fGenParMm.ResizeTo(5);
 	fGenParACTS.ResizeTo(6);
@@ -72,18 +70,39 @@ ObsTrk::ObsTrk(Double_t *x, Double_t *p, Double_t Q, SolGridCov* GC, SolGeom *G)
 	fCovMm.ResizeTo(5, 5);
 	fCovACTS.ResizeTo(6, 6);
 	fCovILC.ResizeTo(5, 5);
-	fGenPar = XPtoPar(fGenX, fGenP, Q);
+	//
+	FillGen();
+	//
+	fCov = CovCalc(fGenPar);
+	fCovMm = CovToMm(fCov);
+	fCovACTS = CovToACTS(fObsPar, fCov);
+	fCovILC = CovToILC(fCov);
+	//
+	fObsDone = kFALSE;
+}
+void ObsTrk::FillGen()
+{
+// Fill Generated track arrays
+//
+	fGenPar = XPtoPar(fGenX, fGenP, fGenQ);
+	fGenParMm = ParToMm(fGenPar);
 	fGenParACTS = ParToACTS(fGenPar);
 	fGenParILC = ParToILC(fGenPar);
-	//
-	fObsPar = GenToObsPar(fGenPar);
+}
+//
+void ObsTrk::FillObs()
+{
+// Fill Observed track arrays
+//
+	fObsPar = TrkUtil::CovSmear(fGenPar, fCov);
+	fObsParMm = ParToMm(fObsPar);
 	fObsParACTS = ParToACTS(fObsPar);
 	fObsParILC = ParToILC(fObsPar);
 	fObsX = ParToX(fObsPar);
 	fObsP = ParToP(fObsPar);
 	fObsQ = ParToQ(fObsPar);
-	fCovACTS = CovToACTS(fObsPar, fCov);
-	fCovILC = CovToILC(fCov);
+	//
+	fObsDone = kTRUE;
 }
 //
 // Destructor
@@ -107,7 +126,29 @@ ObsTrk::~ObsTrk()
 	fCovILC.Clear();
 }
 //
-TVectorD ObsTrk::GenToObsPar(TVectorD gPar)
+// Rescale covariance if needed
+//
+void ObsTrk::SetScale(Double_t scale)
+{
+//
+// Scale covariance matrix by "scale"
+//
+	fEscale = scale;			// scale of resolution
+	if(!fEflag){ 
+		fCov *= (fEscale*fEscale);	// Rescale covariance matrix
+		fEflag = kTRUE;				// Scaling flag 
+		// Update covariance matrix variants
+		fCovMm = CovToMm(fCov);
+		fCovACTS = CovToACTS(fObsPar, fCov);
+		fCovILC = CovToILC(fCov);
+	}
+	else std::cout<<"ObsTrk::SetScale: Already called --> no action"<<std::endl;
+}
+
+//
+// Calculate covariance matrix
+//
+TMatrixDSym ObsTrk::CovCalc(TVectorD gPar)
 {
 	//
 	// Check ranges
@@ -116,7 +157,7 @@ TVectorD ObsTrk::GenToObsPar(TVectorD gPar)
 	Double_t maxPt = fGC->GetMaxPt();
 	//if (pt > maxPt) std::cout << "Warning ObsTrk::GenToObsPar: pt " << pt << " is above grid range of " << maxPt << std::endl;
 	Double_t minAn = fGC->GetMinAng();
-	//if (angd < minAn) std::cout << "Warning ObsTrk::GenToObsPar: angle " << angd 
+	//if (angd < minAn) std::cout << "Warning ObsTrk::GenToObsPar: angle " << angd
 	//	<< " is below grid range of " << minAn << std::endl;
 	Double_t maxAn = fGC->GetMaxAng();
 	//if (angd > maxAn) std::cout << "Warning ObsTrk::GenToObsPar: angle " << angd
@@ -130,6 +171,12 @@ TVectorD ObsTrk::GenToObsPar(TVectorD gPar)
 	Double_t ZinPos = fG->GetZminPos();
 	Double_t ZinNeg = fG->GetZminNeg();
 	Bool_t inside = TrkUtil::IsInside(fGenX, Rin, ZinNeg, ZinPos); // Check if in inner box
+	SolTrack* trk = new SolTrack(fGenX, fGenP, fG);
+	Double_t Xfirst, Yfirst, Zfirst;
+	Int_t iLay = trk->FirstHit(Xfirst, Yfirst, Zfirst);
+	fXfirst = TVector3(Xfirst, Yfirst, Zfirst);
+  //std::cout<<"obs trk: "<<Xfirst<<","<<Yfirst<<","<<Zfirst<<std::endl;
+
 	if (inside)
 	{
 		//std::cout<<"ObsTrk:: inside: x= "<<fGenX(0)<<", y= "<<fGenX(1)
@@ -143,18 +190,12 @@ TVectorD ObsTrk::GenToObsPar(TVectorD gPar)
 	{
 		//std::cout<<"ObsTrk:: outside: x= "<<fGenX(0)<<", y= "<<fGenX(1)
                 //                         <<", z= "<<fGenX(2)<<std::endl;
-		SolTrack* trk = new SolTrack(fGenX, fGenP, fG);
 		Bool_t Res = kTRUE; Bool_t MS = kTRUE;
 		trk->CovCalc(Res, MS);					// Calculate covariance matrix
-		Cov = trk->Cov();					// Track covariance
-		delete trk;
-	}
-	//
-	fCov = Cov;
-	//
-	// Now do Choleski decomposition and random number extraction, with appropriate stabilization
-	//
-	TVectorD oPar = TrkUtil::CovSmear(gPar, Cov);
-	//
-	return oPar;
+		Cov = trk->Cov();
+	}					// Track covariance
+	delete trk;
+//
+	return Cov;
 }
+
